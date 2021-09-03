@@ -17,7 +17,7 @@ const frag = glsl(/*glsl*/`
   varying vec2 vUv;
 
   void main () {
-    vec3 colorA = vec3(1.0, 0.0, 0.0);
+    vec3 colorA = cos(time * 2.0) + vec3(1.0, 0.0, 0.0);
     vec3 colorB = vec3(0.0, 0.5, 0.0);
 
     vec2 center = vUv - 0.5;
@@ -25,9 +25,9 @@ const frag = glsl(/*glsl*/`
 
     float dist = length(center);
 
-    float alpha = smoothstep(0.251, 0.25, dist);
+    float alpha = smoothstep(0.50, 0.25, dist);
 
-    vec3 color = mix(colorA, colorB, vUv.x);
+    vec3 color = mix(colorA, colorB, vUv.y + vUv.x * sin(time));
     gl_FragColor = vec4(color, alpha);
   }
 `)
