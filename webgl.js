@@ -40,60 +40,67 @@ const sketch = ({ context }) => {
 
   const palette = random.pick(palettes)
 
-  const fragmentShader = /*glsl*/ `
+  const fragmentShader = /*glsl*/ glslify(`
     varying vec2 vUv;
+
+    #pragma glslify: noise = require('glsl-noise/simplex/3d');
 
     uniform vec3 color;
 
+    uniform float playhead;
+
     void main() {
-      gl_FragColor = vec4(vec3(color * vUv.x), 1.0);
+      float offset = 0.3 * noise(vec3(vUv.xy * 5.0, playhead));
+      gl_FragColor = vec4(vec3(color * vUv.x + offset), 1.0);
     }
-  `
+  `)
 
   const vertexShader = /*glsl*/ glslify(
     `
     varying vec2 vUv;
     
-    uniform float time;
+    uniform float playhead;
 
     #pragma glslify: noise = require('glsl-noise/simplex/4d');
 
     void main() {
       vUv = uv;
       vec3 pos = position.xyz;
-      pos += noise(vec4(position.xyz, time)) * 1.0;
+      pos += 0.05 * normal * noise(vec4(pos.xyz * 10.0, 0.0)) ;
+      pos += 0.25 * normal * noise(vec4(pos.xyz * 1.0, 0.0)) ;
+      pos += 0.05 * normal * noise(vec4(pos.xyz * 100.0, 0.0)) ;
       gl_Position = projectionMatrix * modelViewMatrix * vec4(pos,  1.0);
     }
   `
   )
 
   // Setup a geometry
-  const geometry = new THREE.BoxGeometry(1, 1, 1)
+  const geometry = new THREE.SphereGeometry(1, 32, 32)
   const meshes = []
 
-  for (let i = 0; i < 40; i++) {
+  for (let i = 0; i < 1; i++) {
     // Setup a material
     const material = new THREE.ShaderMaterial({
       fragmentShader,
       vertexShader,
       uniforms: {
         color: { value: new THREE.Color(random.pick(palette)) },
-        time: { value: 0 },
+        playhead: { value: 0 },
       },
     })
     // Setup a mesh with geometry + material
     const mesh = new THREE.Mesh(geometry, material)
-    mesh.position.set(
-      random.range(-1, 1),
-      random.range(-1, 1),
-      random.range(-1, 1)
-    )
-    mesh.scale.set(
-      random.range(-1, 1),
-      random.range(-1, 1),
-      random.range(-1, 1)
-    )
-    mesh.scale.multiplyScalar(0.5)
+    // mesh.position.set(
+    //   random.range(-1, 1),
+    //   random.range(-1, 1),
+    //   random.range(-1, 1)
+    // )
+    // mesh.scale.set(
+    //   random.range(-1, 1),
+    //   random.range(-1, 1),
+    //   random.range(-1, 1)
+    // )
+    // mesh.scale.multiplyScalar(0.5)
     scene.add(mesh)
     meshes.push(mesh)
   }
@@ -135,13 +142,13 @@ const sketch = ({ context }) => {
       camera.updateProjectionMatrix()
     },
     // Update & render your scene here
-    render({ playhead, time }) {
+    render({ playhead }) {
       const t = Math.sin(playhead * Math.PI)
       // scene.rotation.z = eases.expoInOut(t)
       scene.rotation.z = easeFn(t)
 
       meshes.forEach((mesh) => {
-        mesh.material.uniforms.time.value = time
+        mesh.material.uniforms.playhead.value = playhead
       })
       renderer.render(scene, camera)
     },
